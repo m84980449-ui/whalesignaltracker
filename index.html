@@ -7,8 +7,7 @@
   <meta name="description" content="Track whale wallets, get real-time alerts on massive crypto movements, and follow the smart money. Start on Binance with an exclusive bonus." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
-  <style>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" /  <style>
     :root {
       --bg: #050505;
       --surface: #0a0a0a;
@@ -32,6 +31,57 @@
       line-height: 1.6;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
+      padding-top: 40px; /* Space for live price ticker */
+    }
+
+    /* Live Price Ticker */
+    .price-ticker-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 40px;
+      background: #0d0d0d;
+      border-bottom: 1px solid var(--surface-border);
+      z-index: 1000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      backdrop-filter: blur(10px);
+    }
+    .ticker-content {
+      display: flex;
+      white-space: nowrap;
+      animation: ticker-move 35s linear infinite;
+    }
+    .ticker-content:hover {
+      animation-play-state: paused;
+    }
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-right: 3rem;
+    }
+    .ticker-symbol {
+      color: #fff;
+      font-weight: 700;
+    }
+    .ticker-price {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .ticker-change {
+      font-size: 0.7rem;
+    }
+    .ticker-change.up { color: var(--success); }
+    .ticker-change.down { color: var(--danger); }
+
+    @keyframes ticker-move {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
     }
 
     /* Background Effects */
@@ -345,6 +395,15 @@
     .success-state h3 { font-size: 1.5rem; margin-bottom: 0.5rem; }
     .countdown { color: var(--accent); font-weight: 900; font-size: 1.2rem; }
 
+    /* Dynamic Row Fade Animation */
+    .new-row {
+      animation: highlight-row 2.5s ease-out;
+    }
+    @keyframes highlight-row {
+      0% { background: rgba(0, 229, 255, 0.2); }
+      100% { background: transparent; }
+    }
+
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(30px); }
       to { opacity: 1; transform: translateY(0); }
@@ -360,6 +419,24 @@
   </style>
 </head>
 <body>
+
+<!-- Live Price Ticker -->
+<div class="price-ticker-bar">
+  <div class="ticker-content" id="ticker-target">
+    <!-- Duplicated items to ensure endless loop scrolling -->
+    <div class="ticker-item"><span class="ticker-symbol">BTC/USDT</span><span class="ticker-price" id="price-BTC">$--,--</span><span class="ticker-change" id="change-BTC">--%</span></div>
+    <div class="ticker-item"><span class="ticker-symbol">ETH/USDT</span><span class="ticker-price" id="price-ETH">$--,--</span><span class="ticker-change" id="change-ETH">--%</span></div>
+    <div class="ticker-item"><span class="ticker-symbol">BNB/USDT</span><span class="ticker-price" id="price-BNB">$--,--</span><span class="ticker-change" id="change-BNB">--%</span></div>
+    <div class="ticker-item"><span class="ticker-symbol">SOL/USDT</span><span class="ticker-price" id="price-SOL">$--,--</span><span class="ticker-change" id="change-SOL">--%</span></div>
+    <div class="ticker-item"><span class="ticker-symbol">ADA/USDT</span><span class="ticker-price" id="price-ADA">$--,--</span><span class="ticker-change" id="change-ADA">--%</span></div>
+    <div class="ticker-item"><span class="ticker-symbol">XRP/USDT</span><span class="ticker-price" id="price-XRP">$--,--</span><span class="ticker-change" id="change-XRP">--%</span></div>
+    <!-- Duplicate for infinite seamless scroll -->
+    <div class="ticker-item"><span class="ticker-symbol">BTC/USDT</span><span class="ticker-price" id="price-BTC-dup">$--,--</span><span class="ticker-change" id="change-BTC-dup">--%</span></div>
+    <div class="ticker-item"><span class="ticker-symbol">ETH/USDT</span><span class="ticker-price" id="price-ETH-dup">$--,--</span><span class="ticker-change" id="change-ETH-dup">--%</span></div>
+    <div class="ticker-item"><span class="ticker-symbol">BNB/USDT</span><span class="ticker-price" id="price-BNB-dup">$--,--</span><span class="ticker-change" id="change-BNB-dup">--%</span></div>
+    <div class="ticker-item"><span class="ticker-symbol">SOL/USDT</span><span class="ticker-price" id="price-SOL-dup">$--,--</span><span class="ticker-change" id="change-SOL-dup">--%</span></div>
+  </div>
+</div>
 
 <div class="bg-glow"></div>
 <div class="bg-glow-2"></div>
@@ -455,7 +532,7 @@
         </div>
       </div>
       <div class="terminal-body">
-        <table>
+        <table id="whale-table">
           <thead>
             <tr>
               <th>Time</th>
@@ -465,24 +542,24 @@
               <th>Source → Destination</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="whale-tbody">
             <tr>
               <td style="color:var(--text-muted)">Just now</td>
-              <td class="tx-hash">0x8f...4e21</td>
+              <td class="tx-hash">0x8f2d...4e21</td>
               <td><span class="tx-amt">4,500</span> <span class="tx-token">ETH</span> <span style="color:var(--success)">($15.8M)</span></td>
               <td><span class="tag buy">ACCUMULATION</span></td>
               <td>Binance → Unknown Wallet</td>
             </tr>
             <tr>
               <td style="color:var(--text-muted)">2m ago</td>
-              <td class="tx-hash">0x2a...9b11</td>
+              <td class="tx-hash">0x2a91...9b11</td>
               <td><span class="tx-amt">1,250</span> <span class="tx-token">BTC</span> <span style="color:var(--danger)">($84.2M)</span></td>
               <td><span class="tag sell">DUMP RISK</span></td>
               <td>Unknown Wallet → Binance</td>
             </tr>
             <tr>
               <td style="color:var(--text-muted)">5m ago</td>
-              <td class="tx-hash">0x4c...8d33</td>
+              <td class="tx-hash">0x4c33...8d33</td>
               <td><span class="tx-amt">120,000</span> <span class="tx-token">SOL</span> <span style="color:var(--success)">($20.5M)</span></td>
               <td><span class="tag buy">ACCUMULATION</span></td>
               <td>Binance → Unknown Wallet</td>
@@ -496,10 +573,94 @@
 </div>
 
 <script>
-  // Logic remains identical, ensuring functional perfection
   const BINANCE_URL = "https://www.binance.com/activity/referral-entry/CPA?ref=897067319&utm_source=referral_entrance";
   const COLLECT_URL = "http://localhost:3099/collect";
   const NTFY_TOPIC = "wst-whale-alerts-xyz7291";
+
+  // Dynamic Binance Ticker updates via official public API
+  async function updatePrices() {
+    try {
+      const res = await fetch("https://api.binance.com/api/v3/ticker/24hr");
+      const data = await res.json();
+      
+      const targets = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "ADAUSDT", "XRPUSDT"];
+      
+      data.forEach(item => {
+        if (targets.includes(item.symbol)) {
+          const sym = item.symbol.replace("USDT", "");
+          const price = parseFloat(item.lastPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const change = parseFloat(item.priceChangePercent);
+          
+          const priceEl = document.getElementById(`price-${sym}`);
+          const changeEl = document.getElementById(`change-${sym}`);
+          
+          if (priceEl && changeEl) {
+            priceEl.innerHTML = `$${price}`;
+            changeEl.innerHTML = `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`;
+            changeEl.className = `ticker-change ${change >= 0 ? "up" : "down"}`;
+            
+            // Handle duplicate elements for smooth scrolling
+            const dupPrice = document.getElementById(`price-${sym}-dup`);
+            const dupChange = document.getElementById(`change-${sym}-dup`);
+            if (dupPrice && dupChange) {
+              dupPrice.innerHTML = `$${price}`;
+              dupChange.innerHTML = `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`;
+              dupChange.className = `ticker-change ${change >= 0 ? "up" : "down"}`;
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.warn("Binance price ticker failed to load. Gracefully fallback.");
+    }
+  }
+
+  // Real-time Whale Transaction Stream Simulator
+  const tokens = ["BTC", "ETH", "SOL", "BNB", "USDT", "USDC", "LINK", "AVAX"];
+  const exchanges = ["Binance", "Coinbase", "Kraken", "OKX", "Bybit", "Unknown Wallet"];
+  
+  function addRandomTransaction() {
+    const tbody = document.getElementById("whale-tbody");
+    if (!tbody) return;
+    
+    const token = tokens[Math.floor(Math.random() * tokens.length)];
+    const amt = (Math.random() * 50000 + 1000).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    const valUSD = (Math.random() * 80 + 1).toFixed(1);
+    const isBuy = Math.random() > 0.45;
+    
+    const src = isBuy ? exchanges[Math.floor(Math.random() * (exchanges.length - 1))] : "Unknown Wallet";
+    let dest = isBuy ? "Unknown Wallet" : exchanges[Math.floor(Math.random() * (exchanges.length - 1))];
+    if (src === dest) dest = "Unknown Wallet 2";
+    
+    const hash = "0x" + Array.from({length: 4}, () => Math.floor(Math.random()*16).toString(16)).join("") + "..." + Array.from({length: 4}, () => Math.floor(Math.random()*16).toString(16)).join("");
+    
+    const row = document.createElement("tr");
+    row.className = "new-row";
+    row.innerHTML = `
+      <td style="color:var(--text-muted)">Just now</td>
+      <td class="tx-hash">${hash}</td>
+      <td><span class="tx-amt">${amt}</span> <span class="tx-token">${token}</span> <span style="color:var(--${isBuy ? "success" : "danger"})">($${valUSD}M)</span></td>
+      <td><span class="tag ${isBuy ? "buy" : "sell"}">${isBuy ? "ACCUMULATION" : "DUMP RISK"}</span></td>
+      <td>${src} → ${dest}</td>
+    `;
+    
+    // Update existing row timestamps
+    Array.from(tbody.children).forEach(r => {
+      const timeCell = r.cells[0];
+      if (timeCell.innerHTML === "Just now") timeCell.innerHTML = "1m ago";
+      else if (timeCell.innerHTML === "1m ago") timeCell.innerHTML = "3m ago";
+      else if (timeCell.innerHTML === "3m ago") timeCell.innerHTML = "5m ago";
+      else if (timeCell.innerHTML === "5m ago") timeCell.innerHTML = "8m ago";
+      else if (timeCell.innerHTML === "8m ago") timeCell.innerHTML = "12m ago";
+    });
+    
+    tbody.insertBefore(row, tbody.firstChild);
+    
+    // Limit to max 8 rows
+    if (tbody.children.length > 8) {
+      tbody.removeChild(tbody.lastChild);
+    }
+  }
 
   async function handleCapture() {
     const emailInput = document.getElementById('email-input');
@@ -534,12 +695,13 @@
     document.getElementById('capture-box').style.display = 'none';
     const success = document.getElementById('capture-success');
     success.style.display = 'block';
-
-    // No auto-redirect, let the user choose their platform
-    log('Email captured successfully. User presented with options.');
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    updatePrices();
+    setInterval(updatePrices, 15000); // Ticker updates every 15s
+    setInterval(addRandomTransaction, 8000); // Whale transactions stream every 8s
+    
     const input = document.getElementById('email-input');
     if (input) {
       input.addEventListener('keydown', (e) => {
@@ -612,6 +774,5 @@
     };
   }
 </script>
-
 </body>
 </html>
